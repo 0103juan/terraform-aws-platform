@@ -1,0 +1,8 @@
+.terraform/
+*.tfstate*
+*.tfvars
+!example.tfvars
+crash.log
+# Lock files belong to what gets applied (envs/), not to modules.
+modules/**/.terraform.lock.hcl
+stacks/**/.terraform.lock.hcl

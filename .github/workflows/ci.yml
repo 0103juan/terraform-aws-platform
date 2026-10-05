@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    env:
+      TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.terraform.d/plugin-cache
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4.0.1
+        with:
+          terraform_version: 1.15.8
+          terraform_wrapper: false
+
+      - name: Format
+        run: terraform fmt -check -recursive
+
+      # No AWS account and no credentials: the tests plan against a mocked provider.
+      - name: Validate and test every module, stack and environment
+        run: |
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+          for dir in modules/* stacks/* envs/*; do
+            echo "::group::$dir"
+            terraform -chdir="$dir" init -backend=false -input=false
+            terraform -chdir="$dir" validate
+            if [ -d "$dir/tests" ]; then terraform -chdir="$dir" test; fi
+            echo "::endgroup::"
+          done
+
+      - name: Lint
+        run: |
+          docker run --rm -v "$PWD:/data" -w /data --entrypoint sh ghcr.io/terraform-linters/tflint:v0.64.0 \
+            -c "tflint --init && tflint --recursive --config /data/.tflint.hcl"
+
+      # Fails on high and critical findings. The lower ones that are accepted are listed in the README, with the reason.
+      - name: Security scan
+        run: |
+          docker run --rm -v "$PWD:/data" aquasec/trivy:0.75.0 config --skip-dirs '**/.terraform' \
+            --severity HIGH,CRITICAL --exit-code 1 /data
