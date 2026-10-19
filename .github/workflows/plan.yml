@@ -1,0 +1,72 @@
+name: Plan
+
+# Plans each environment against its real cloud on every pull request, so a reviewer sees what would change.
+# Credentials are short-lived tokens from gcp/modules/github-wif and aws/modules/github-oidc: no key is stored.
+# A plan only reads; it creates nothing. It stays off until PLAN_ENABLED is set to true in the repository's
+# variables, so an unconfigured copy or a fork skips it instead of failing.
+#
+# Each matrix entry runs in a GitHub environment (plan-<cloud>-<env>). That puts the environment in the token's
+# subject (repo:OWNER/REPO:environment:plan-gcp-dev), which is what the identity modules are told to trust,
+# and holds that environment's variables:
+#   GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_SERVICE_ACCOUNT   outputs of github-wif (roles/viewer is enough)
+#   AWS_ROLE_ARN                                          output of github-oidc (ReadOnlyAccess is enough)
+#   STATE_BUCKET                                          the state bucket, which the role must be able to read
+#   TFVARS                                                the contents of that environment's terraform.tfvars
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  id-token: write # to ask GitHub for the token the clouds exchange for credentials
+
+jobs:
+  plan:
+    if: vars.PLAN_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { cloud: gcp, env: dev }
+          - { cloud: gcp, env: prod }
+          - { cloud: aws, env: dev }
+          - { cloud: aws, env: prod }
+    environment: plan-${{ matrix.cloud }}-${{ matrix.env }}
+    defaults:
+      run:
+        working-directory: ${{ matrix.cloud }}/envs/${{ matrix.env }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: hashicorp/setup-terraform@v4.0.1
+        with:
+          terraform_version: 1.15.8
+          terraform_wrapper: false
+
+      - if: matrix.cloud == 'gcp'
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - if: matrix.cloud == 'aws'
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      # -lock=false: a plan writes nothing, so it does not need to wait for, or block, an apply.
+      - name: Plan
+        env:
+          TFVARS: ${{ vars.TFVARS }}
+          STATE_BUCKET: ${{ vars.STATE_BUCKET }}
+        run: |
+          printf '%s\n' "$TFVARS" > terraform.tfvars
+          terraform init -input=false -backend-config="bucket=$STATE_BUCKET"
+          terraform plan -input=false -lock=false -no-color | tee plan.txt
+          {
+            echo "### ${{ matrix.cloud }}/${{ matrix.env }}"
+            echo '```'
+            tail -c 60000 plan.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
