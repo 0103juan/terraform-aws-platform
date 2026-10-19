@@ -22,3 +22,13 @@ output "master_secret_arn" {
   description = "Secrets Manager secret that holds the master user's password. Grant a workload read access to it instead of copying the password."
   value       = aws_db_instance.this.master_user_secret[0].secret_arn
 }
+
+output "identifier" {
+  description = "Identifier of the instance, as CloudWatch's DBInstanceIdentifier dimension names it."
+  value       = aws_db_instance.this.identifier
+}
+
+output "resource_id" {
+  description = "Resource ID of the instance, the part of an rds-db:connect ARN that names it."
+  value       = aws_db_instance.this.resource_id
+}

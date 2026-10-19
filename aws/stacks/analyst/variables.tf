@@ -62,6 +62,7 @@ variable "database" {
     multi_az              = bool
     backup_retention_days = number
     deletion_protection   = bool
+    free_storage_alarm_gb = optional(number, 5)
   })
 }
 
@@ -89,12 +90,12 @@ variable "monthly_budget_usd" {
   }
 }
 
-variable "budget_emails" {
-  description = "Who the budget warns. At least one address."
+variable "alert_emails" {
+  description = "Who the budget and the alarms warn. At least one address."
   type        = list(string)
 
   validation {
-    condition     = length(var.budget_emails) > 0
-    error_message = "budget_emails needs at least one address: a budget nobody hears about protects nothing."
+    condition     = length(var.alert_emails) > 0
+    error_message = "alert_emails needs at least one address: an alarm nobody hears about protects nothing."
   }
 }

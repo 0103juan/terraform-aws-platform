@@ -32,3 +32,13 @@ output "image_repository_url" {
   description = "Where to push the service's image: docker push <this>:<tag>."
   value       = aws_ecr_repository.api.repository_url
 }
+
+output "workload_role_arns" {
+  description = "Roles of the cluster add-ons and the service, by namespace/service account (EKS Pod Identity binds them; no annotation needed)."
+  value = {
+    "secop-analyst/api"                        = module.api_identity.role_arn
+    "external-secrets/external-secrets"        = module.external_secrets_identity.role_arn
+    "kube-system/aws-load-balancer-controller" = module.load_balancer_controller_identity.role_arn
+    "kube-system/cluster-autoscaler"           = module.cluster_autoscaler_identity.role_arn
+  }
+}

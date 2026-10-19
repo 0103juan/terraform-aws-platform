@@ -47,7 +47,7 @@ module "analyst" {
   api_allowed_cidrs  = var.api_allowed_cidrs
   admin_role_arns    = var.admin_role_arns
   monthly_budget_usd = 150
-  budget_emails      = var.budget_emails
+  alert_emails       = var.alert_emails
 
   nodes    = { instance_types = ["t4g.medium"], capacity_type = "SPOT", min = 1, max = 2 }
   database = { instance_class = "db.t4g.micro", multi_az = false, backup_retention_days = 1, deletion_protection = false }

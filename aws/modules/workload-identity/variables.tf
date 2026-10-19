@@ -25,6 +25,7 @@ variable "statements" {
     actions   = list(string)
     resources = list(string)
   }))
+  default = []
 
   validation {
     condition     = alltrue([for statement in var.statements : !contains(statement.actions, "*") && !contains(statement.resources, "*")])
@@ -32,7 +33,13 @@ variable "statements" {
   }
 
   validation {
-    condition     = length(var.statements) > 0
-    error_message = "A role that allows nothing is a mistake: give at least one statement."
+    condition     = length(var.statements) > 0 || var.vendor_policy_json != null
+    error_message = "A role that allows nothing is a mistake: give at least one statement or a vendor policy."
   }
+}
+
+variable "vendor_policy_json" {
+  description = "A policy document published by a controller's maintainers, applied as published. Only for controllers whose own documentation gives the policy: the workload's own permissions go in statements."
+  type        = string
+  default     = null
 }

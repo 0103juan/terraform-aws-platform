@@ -15,8 +15,9 @@ resource "aws_iam_role" "this" {
 }
 
 resource "aws_iam_role_policy" "this" {
-  name = "workload"
-  role = aws_iam_role.this.id
+  count = length(var.statements) > 0 ? 1 : 0
+  name  = "workload"
+  role  = aws_iam_role.this.id
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [for statement in var.statements : {
@@ -26,6 +27,15 @@ resource "aws_iam_role_policy" "this" {
       Resource = statement.resources
     }]
   })
+}
+
+# A policy published by a controller's maintainers, such as the AWS Load Balancer Controller's. It is applied
+# as published, wildcards included, because a hand-trimmed copy breaks on the controller's next release.
+resource "aws_iam_role_policy" "vendor" {
+  count  = var.vendor_policy_json == null ? 0 : 1
+  name   = "vendor"
+  role   = aws_iam_role.this.id
+  policy = var.vendor_policy_json
 }
 
 resource "aws_eks_pod_identity_association" "this" {

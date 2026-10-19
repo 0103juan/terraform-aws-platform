@@ -9,7 +9,7 @@ variable "api_allowed_cidrs" {
   default     = []
 }
 
-variable "budget_emails" {
-  description = "Who hears about the environment's cost. Account-specific, so it comes from a tfvars file or the pipeline."
+variable "alert_emails" {
+  description = "Who hears about the environment's cost and alarms. Account-specific, so it comes from a tfvars file or the pipeline."
   type        = list(string)
 }

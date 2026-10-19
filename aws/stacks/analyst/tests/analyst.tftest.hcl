@@ -8,7 +8,7 @@ variables {
   kubernetes_version = "1.34"
   admin_role_arns    = { platform = "arn:aws:iam::111111111111:role/platform-admin" }
   monthly_budget_usd = 150
-  budget_emails      = ["platform@example.com"]
+  alert_emails       = ["platform@example.com"]
 }
 
 run "plans_in_the_shape_of_dev" {
@@ -37,6 +37,16 @@ run "plans_in_the_shape_of_dev" {
     condition     = contains(one(aws_budgets_budget.monthly.cost_filter).values, "user:Environment$dev")
     error_message = "The budget counts only what carries this environment's tag."
   }
+
+  assert {
+    condition     = length(aws_cloudwatch_metric_alarm.database) == 3 && keys(aws_cloudwatch_metric_alarm.cache) == ["analyst-dev-001-cpu", "analyst-dev-001-memory"]
+    error_message = "Three database alarms, and two per cache node: dev has one node."
+  }
+
+  assert {
+    condition     = aws_cloudwatch_metric_alarm.database["storage"].threshold == 5 * 1024 * 1024 * 1024
+    error_message = "The storage alarm counts bytes, as the metric does."
+  }
 }
 
 run "plans_in_the_shape_of_prod" {
@@ -54,6 +64,11 @@ run "plans_in_the_shape_of_prod" {
     condition     = aws_secretsmanager_secret.model_api_key.recovery_window_in_days == 30
     error_message = "A deleted production secret can be recovered for thirty days."
   }
+
+  assert {
+    condition     = length(aws_cloudwatch_metric_alarm.cache) == 4
+    error_message = "Prod's two cache nodes get two alarms each."
+  }
 }
 
 run "an_unknown_environment_is_refused" {
@@ -70,7 +85,7 @@ run "an_unknown_environment_is_refused" {
   expect_failures = [var.environment]
 }
 
-run "a_budget_nobody_hears_about_is_refused" {
+run "an_alarm_nobody_hears_about_is_refused" {
   command = plan
 
   variables {
@@ -79,8 +94,8 @@ run "a_budget_nobody_hears_about_is_refused" {
     nodes              = { instance_types = ["t4g.medium"], capacity_type = "SPOT", min = 1, max = 2 }
     database           = { instance_class = "db.t4g.micro", multi_az = false, backup_retention_days = 1, deletion_protection = false }
     cache              = { node_type = "cache.t4g.micro", nodes = 1 }
-    budget_emails      = []
+    alert_emails       = []
   }
 
-  expect_failures = [var.budget_emails]
+  expect_failures = [var.alert_emails]
 }
