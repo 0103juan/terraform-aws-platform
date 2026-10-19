@@ -29,7 +29,7 @@ provider "aws" {
       Project     = "analyst"
       Environment = "prod"
       ManagedBy   = "terraform"
-      Repository  = "terraform-aws-platform"
+      Repository  = "terraform-cloud-platform"
     }
   }
 }

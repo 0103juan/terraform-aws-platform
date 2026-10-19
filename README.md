@@ -1,4 +1,4 @@
-# terraform-aws-platform
+# terraform-cloud-platform
 
 Terraform for running a containerised service on **Google Cloud** and on **AWS**, with each cloud's own
 services: a network, a Kubernetes cluster, PostgreSQL, Redis, an image registry, secrets, the identity plumbing
@@ -54,6 +54,7 @@ Kubernetes manifests, with the Postgres and Redis pods replaced by managed servi
 | Terraform state | Cloud Storage bucket; the backend locks by itself | S3 bucket with S3's own lock file |
 | Cost guard | Billing budget on the environment's project | AWS Budget filtered by the `Environment` tag |
 | Alarms | Cloud Monitoring alert policies to email channels | CloudWatch alarms to an SNS topic with a customer-managed key |
+| Containers without a cluster | Cloud Run (`cloud-run` module) | Not built yet. The counterparts are ECS on Fargate for a long-running service or job, and Lambda for short event-driven functions |
 
 ## Choices worth reading the code for
 
@@ -172,7 +173,7 @@ until the repository variable `PLAN_ENABLED` is `true`. To turn it on:
 
 ```hcl
 module "deploy" {
-  source = "github.com/0103juan/terraform-aws-platform//gcp/modules/github-wif?ref=<commit>"   # pin a commit or a tag
+  source = "github.com/0103juan/terraform-cloud-platform//gcp/modules/github-wif?ref=<commit>"   # pin a commit or a tag
 
   project_id    = "my-project"
   name          = "my-service-deploy"
@@ -181,7 +182,7 @@ module "deploy" {
 }
 
 module "api" {
-  source = "github.com/0103juan/terraform-aws-platform//gcp/modules/cloud-run?ref=<commit>"
+  source = "github.com/0103juan/terraform-cloud-platform//gcp/modules/cloud-run?ref=<commit>"
 
   project_id = "my-project"
   name       = "my-service-api"
