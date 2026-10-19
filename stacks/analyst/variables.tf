@@ -72,3 +72,29 @@ variable "cache" {
     nodes     = number
   })
 }
+
+variable "images_to_keep" {
+  description = "How many images of the service the registry keeps, for rollbacks."
+  type        = number
+  default     = 20
+}
+
+variable "monthly_budget_usd" {
+  description = "Monthly cost of the environment, in USD, above which the budget warns."
+  type        = number
+
+  validation {
+    condition     = var.monthly_budget_usd > 0
+    error_message = "monthly_budget_usd is a positive amount."
+  }
+}
+
+variable "budget_emails" {
+  description = "Who the budget warns. At least one address."
+  type        = list(string)
+
+  validation {
+    condition     = length(var.budget_emails) > 0
+    error_message = "budget_emails needs at least one address: a budget nobody hears about protects nothing."
+  }
+}

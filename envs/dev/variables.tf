@@ -8,3 +8,8 @@ variable "api_allowed_cidrs" {
   type        = list(string)
   default     = []
 }
+
+variable "budget_emails" {
+  description = "Who hears about the environment's cost. Account-specific, so it comes from a tfvars file or the pipeline."
+  type        = list(string)
+}

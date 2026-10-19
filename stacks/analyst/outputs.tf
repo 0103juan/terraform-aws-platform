@@ -27,3 +27,8 @@ output "outbound_ips" {
   description = "Addresses the environment's outbound traffic comes from."
   value       = module.network.nat_public_ips
 }
+
+output "image_repository_url" {
+  description = "Where to push the service's image: docker push <this>:<tag>."
+  value       = aws_ecr_repository.api.repository_url
+}

@@ -43,6 +43,8 @@ module "analyst" {
   availability_zones = ["us-east-1a", "us-east-1b", "us-east-1c"]
   kubernetes_version = "1.34"
   admin_role_arns    = var.admin_role_arns
+  monthly_budget_usd = 1500
+  budget_emails      = var.budget_emails
 
   nodes    = { instance_types = ["m7g.large"], capacity_type = "ON_DEMAND", min = 3, max = 6 }
   database = { instance_class = "db.m7g.large", multi_az = true, backup_retention_days = 14, deletion_protection = true }

@@ -5,7 +5,7 @@ Redis-compatible cache, and the identity plumbing between them. Written as reusa
 stack, and instantiated as two environments.
 
 **Nothing here has been applied to an AWS account.** It is checked the ways code can be checked without one:
-formatting, `terraform validate`, 31 tests that plan against a mocked provider, a linter and a security
+formatting, `terraform validate`, 32 tests that plan against a mocked provider, a linter and a security
 scanner, all in CI. What that does and does not prove is under [Limits](#limits).
 
 ```
@@ -49,6 +49,12 @@ Kubernetes manifests, with the Postgres and Redis pods replaced by managed servi
 - **Mistakes are caught at plan time.** Variables carry validations with messages that say what to do: a VPC
   range that is not a /16, a single availability zone, backups turned off, more minimum than maximum nodes.
   Each has a test that expects the failure.
+- **An environment that is left running warns someone.** EKS's control plane and every NAT gateway are billed
+  by the hour whether anything runs or not. Each environment has a monthly budget filtered by its
+  `Environment` tag, which emails when 80 % is spent and when the forecast passes the whole amount; a budget
+  with no address is refused at plan time.
+- **A tag always names the same image.** The service's ECR repository has immutable tags, so a rollback goes
+  back to exactly what ran, scans every image on push and expires untagged layers and old builds.
 - **Explicit over looked-up.** Regions and availability zones are passed in, not read from data sources, so a
   plan makes no API call that is not about the resources themselves.
 
@@ -103,7 +109,11 @@ CI fails on high and critical findings; there are none. These lower ones remain,
 - **A mocked provider returns made-up values for computed attributes,** so the tests assert on what the
   configuration sets, not on what AWS would return. The stack's test proves the modules fit together in the
   shape of each environment and little more.
-- **No cost estimate.** The dev/prod choices are argued in comments, not priced.
+- **No cost estimate.** The dev/prod choices are argued in comments, not priced. The budget warns after the
+  money is being spent; it does not stop anything. Its filter only sees the `Environment` tag once it is
+  activated as a cost allocation tag in the billing console.
+- **The nodes are Graviton** (`t4g`, `m7g`), so the image must be built for `linux/arm64` (or for both
+  architectures). An `amd64` image fails on them with `exec format error`.
 - **Not included:** DNS and certificates, a load balancer controller and an ingress, autoscaling of the
   nodes, how the Kubernetes manifests read the secrets (an operator such as External Secrets), alarms and
   dashboards, backups to another region, and a pipeline that plans on pull requests and applies on merge.
