@@ -23,11 +23,11 @@ jobs:
       - name: Format
         run: terraform fmt -check -recursive
 
-      # No AWS account and no credentials: the tests plan against a mocked provider.
-      - name: Validate and test every module, stack and environment
+      # No cloud account and no credentials: the tests plan against mocked providers.
+      - name: Validate and test every module, stack and environment of both clouds
         run: |
           mkdir -p "$TF_PLUGIN_CACHE_DIR"
-          for dir in modules/* stacks/* envs/*; do
+          for dir in gcp/modules/* gcp/stacks/* gcp/envs/* aws/modules/* aws/stacks/* aws/envs/*; do
             echo "::group::$dir"
             terraform -chdir="$dir" init -backend=false -input=false
             terraform -chdir="$dir" validate
