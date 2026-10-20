@@ -213,7 +213,8 @@ CI fails on high and critical findings; there are none. These lower ones remain,
 
 ## Applied once on Google Cloud
 
-`gcp/envs/dev` was applied on 2026-10-20 to a new, throwaway project on a free-trial billing account and checked.
+`gcp/envs/dev` was applied on 2026-10-20 to a new, throwaway project on a free-trial billing account, checked,
+and destroyed.
 All 54 resources were created; the slowest were the GKE cluster (12 min 28 s), Cloud SQL
 (5 min 13 s) and Memorystore (4 min 1 s). A second `plan` afterwards reported no changes. Checked by hand:
 
@@ -233,6 +234,11 @@ The first apply stopped part way. What it found, and what changed:
 `gcp/envs/dev` also takes `budget_currency` and `monthly_budget` now, because a budget in USD is rejected on a
 billing account in another currency. The bucket name can be passed at init time instead of edited into the
 file: `terraform init -backend-config="bucket=<name>"`.
+
+`terraform destroy` removed 37 of the 54 resources and stopped at the Private Service Access connection:
+Google still counted it as used by Cloud SQL and Memorystore minutes after both were deleted. What remained
+(the VPC, the reserved range, the connection and the enabled APIs) is not billed, and deleting the project
+removed it. An environment that lives in its own project can always be torn down that way.
 
 ## Limits
 
