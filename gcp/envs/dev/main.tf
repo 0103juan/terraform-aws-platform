@@ -43,8 +43,9 @@ module "analyst" {
   billing_account    = var.billing_account
   alert_emails       = var.alert_emails
 
-  nodes          = { machine_type = "e2-standard-2", spot = true, min = 1, max = 2 }
-  database       = { tier = "db-custom-1-3840", high_availability = false, backup_retention_days = 1, deletion_protection = false }
-  cache          = { memory_size_gb = 1, high_availability = false }
-  monthly_budget = 150
+  nodes           = { machine_type = "e2-standard-2", spot = true, min = 1, max = 2 }
+  database        = { tier = "db-custom-1-3840", high_availability = false, backup_retention_days = 1, deletion_protection = false }
+  cache           = { memory_size_gb = 1, high_availability = false }
+  monthly_budget  = var.monthly_budget
+  budget_currency = var.budget_currency
 }

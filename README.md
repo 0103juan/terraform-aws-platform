@@ -211,13 +211,36 @@ CI fails on high and critical findings; there are none. These lower ones remain,
 | AWS-0089 the state bucket has no access logging | Access logging needs a second bucket to write to. CloudTrail data events are the usual answer and belong to the account, not to this module. |
 | GCP-0021 long statements are logged | On purpose: statements slower than `slow_query_ms` (one second) are what finds a missing index. |
 
+## Applied once on Google Cloud
+
+`gcp/envs/dev` was applied on 2026-10-20 to a new, throwaway project on a free-trial billing account and checked.
+All 54 resources were created; the slowest were the GKE cluster (12 min 28 s), Cloud SQL
+(5 min 13 s) and Memorystore (4 min 1 s). A second `plan` afterwards reported no changes. Checked by hand:
+
+- `kubectl get nodes` from the one allowed address: one Spot `e2-standard-2` node, Ready, internal address only.
+- Cloud SQL has a private address only and accepts encrypted connections only; Memorystore has a private
+  address, AUTH and TLS; the cluster has private nodes, Dataplane V2 and encrypted Kubernetes secrets.
+
+The first apply stopped part way. What it found, and what changed:
+
+| What failed | Why | Fix |
+|---|---|---|
+| Cloud KMS key ring | The KMS API was turned on in the same apply and had not propagated yet | None needed: the next apply created it |
+| Workload Identity bindings | They name the identity pool the cluster creates, and nothing made them wait for the cluster | `depends_on = [module.gke]` on both identities |
+| GKE cluster | The temporary default pool starts one 100 GB SSD node per zone, 300 GB, over the 250 GB regional SSD quota of a new project | That pool gets 20 GB standard disks; `ignore_changes` keeps them from replacing the cluster later |
+| Billing budget | With user credentials the Budgets API needs a quota project | `GOOGLE_BILLING_PROJECT=<project>` and `USER_PROJECT_OVERRIDE=true` when applying as a person; not needed for a service account |
+
+`gcp/envs/dev` also takes `budget_currency` and `monthly_budget` now, because a budget in USD is rejected on a
+billing account in another currency. The bucket name can be passed at init time instead of edited into the
+file: `terraform init -backend-config="bucket=<name>"`.
+
 ## Limits
 
-- **Never applied.** `validate` checks the configuration against the providers' schemas and the tests check
-  what the plan would contain. Neither catches what only the cloud's API knows: a machine type or instance class
-  that is not offered in a zone, a Kubernetes or engine version that is not available, a quota, a name that is
-  taken, an API that takes minutes to turn on, the order two resources really have to be created in. The first
-  `apply` will find some of these.
+- **The AWS half and `gcp/envs/prod` were never applied.** `validate` checks the configuration against the
+  providers' schemas and the tests check what the plan would contain. Neither catches what only the cloud's API
+  knows: a machine type that is not offered in a zone, a version that is not available, a quota, a name that is
+  taken, an API that takes minutes to turn on, the order two resources really have to be created in. Applying
+  `gcp/envs/dev` found three of these (above).
 - **A mocked provider returns made-up values for computed attributes,** so the tests assert on what the
   configuration sets, not on what the cloud would return. The stacks' tests prove the modules fit together in
   the shape of each environment and little more. They did catch one real error: a `for_each` over service

@@ -24,3 +24,15 @@ variable "api_allowed_cidrs" {
   type        = list(string)
   default     = []
 }
+
+variable "monthly_budget" {
+  description = "Monthly cost of the environment, in budget_currency, above which the budget warns."
+  type        = number
+  default     = 150
+}
+
+variable "budget_currency" {
+  description = "Currency of the billing account, such as USD or COP."
+  type        = string
+  default     = "USD"
+}
