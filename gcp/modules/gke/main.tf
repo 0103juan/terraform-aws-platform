@@ -58,9 +58,17 @@ resource "google_container_cluster" "this" {
   min_master_version  = var.kubernetes_version
   deletion_protection = var.deletion_protection
 
-  # The default pool cannot be configured; it is replaced by the one below.
+  # The default pool lives only until it is replaced by the one below. It still starts one node per zone,
+  # so small standard disks keep its three nodes out of the region's SSD quota (250 GB on a new project).
   remove_default_node_pool = true
   initial_node_count       = 1
+  node_config {
+    disk_size_gb = 20
+    disk_type    = "pd-standard"
+  }
+  lifecycle {
+    ignore_changes = [node_config] # describes the removed default pool; a later read must not replace the cluster
+  }
 
   release_channel {
     channel = var.release_channel

@@ -172,6 +172,8 @@ module "api_identity" {
   namespace       = "secop-analyst"
   service_account = "api"
   project_roles   = ["roles/cloudsql.client", "roles/cloudsql.instanceUser"]
+
+  depends_on = [module.gke] # the cluster creates the workload identity pool these bindings name
 }
 
 # External Secrets Operator copies the secrets into Kubernetes secrets of the service's namespace, so the
@@ -183,6 +185,8 @@ module "external_secrets_identity" {
   name            = "${local.name}-eso"
   namespace       = "external-secrets"
   service_account = "external-secrets"
+
+  depends_on = [module.gke] # the cluster creates the workload identity pool these bindings name
 }
 
 resource "google_secret_manager_secret_iam_member" "external_secrets" {
